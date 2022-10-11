@@ -1,3 +1,88 @@
-/*1. Select all the information about Suppliers from Germany*/
-select * from Suppliers
-where Country= 'Germany'
+/*1. Select all the information about Products with CategoriesID “1” and “6” and sort the results by Price*/
+
+select * from Products
+where CategoryID IN (1,6)
+order by Price asc;
+
+/*2. Select all Seafood products with the Price up to 20 inclusive*/
+
+select ProductName, CategoryID, Price from Products
+where CategoryID = (select CategoryID from Categories where CategoryName='Seafood') 
+and Price <= 20
+
+/*3. Select the product with the maximum price and name the resulting column “MAXPrice”*/
+
+select ProductName, price as MAXPrice from Products
+where price = (select max (Price) as temp from Products)
+
+/*4. Show the average price of the products delivered in jars, round to 2 decimal places and name the resulting column “AVGPrice”*/
+
+select round(AVG (Price),2) as AVGPrice from Products
+where Unit like '%jars'
+
+/*5. Count all the customers per city and show the list of cities with the number of customers is more than 1. Name the resulting column “CustomerNumber”*/
+
+select Country, City, count (City) as CustomerNumber from Customers
+group by Country, City
+having count (City) > 1
+
+/*6. Show the list of the shippers who sent orders to the Customer with ID # 46, but have the Customer Name displayed instead of its ID number*/
+
+select ShipperName, OrderDate, CustomerName
+from Shippers inner join Orders on Shippers.ShipperID = Orders.ShipperID
+inner join Customers on Orders.CustomerID = Customers.CustomerID
+where Orders.CustomerID = 46
+
+/*7. Select the supplier who delivers the most expensive product in the bottles.*/
+
+select SupplierName, ProductName, Unit, Price 
+from Suppliers inner join Products on Suppliers.SupplierID = Products.SupplierID
+where price = (select max (Price) from Products where unit like '%bottles' )
+
+/*8. Select customers and change the results in the Summary column “Language” depending on the City condition: “English” for London, “French” for Paris and “I don’t know” for Graz and Sevilla cities.*/
+
+select CustomerName, Address, City, 
+case
+when City = 'London' then 'English'
+when City = 'Paris' then 'French'
+else 'I don�t know'
+end as 'Language'
+from Customers
+where City in ('London', 'Paris', 'Graz', 'Sevilla')
+order by Language
+
+/*9. Display the information for the order submitted on the 17th of January 1997 with the following details:
+- customer name
+- the name of the employee who processed the order 
+- the name of the shipper involved in this transaction*/
+
+select OrderDate, CustomerName, FirstName + ' ' + LastName as 'EmployeeName', ShipperName from Orders 
+inner join Customers on Orders.CustomerID = Customers.CustomerID
+inner join Employees on Orders.EmployeeID = Employees.EmployeeID
+inner join Shippers on Orders.ShipperID = Shippers.ShipperID
+where YEAR (OrderDate) = 1997 and MONTH (OrderDate) = 1 and DAY (OrderDate) = 17
+
+/*10. Show product names that was ordered by the customer “Hanari Carnes”. Categories of these products should consist of 7 symbols.*/
+
+with temp1 as 
+(select OrderID, CustomerName from Orders
+inner join Customers on Orders.CustomerID = Customers.CustomerID
+where CustomerName = 'Hanari Carnes'),
+temp2 as
+(select OrderID, ProductName, CategoryID from Orderdetails
+inner join Products on Orderdetails.ProductID = Products.ProductID
+where CategoryID in (select CategoryID from Categories
+where CategoryName like '_______'))
+select CustomerName as 'CUSTOMER', ProductName from temp1
+inner join temp2 on temp1.OrderID = temp2.OrderID
+
+/*11. Select the shipper who performed the greatest number of shippings. Show the number of performed shippings as well.*/
+
+with temp1 as
+(select OrderID, ShipperName from Orders
+inner join Shippers on Orders.ShipperID = Shippers.ShipperID)
+select top (1) COUNT (OrderID) as TotalNumber, ShipperName from temp1
+group by ShipperName 
+order by TotalNumber desc
+
+
